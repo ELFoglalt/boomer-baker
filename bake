@@ -1,0 +1,59 @@
+#!/bin/bash
+
+# strict mode
+set -eou pipefail
+IFS=$'\n\t'
+# see http://redsymbol.net/articles/unofficial-bash-strict-mode/
+
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+
+SERVER_ZIP=$(realpath ${1})
+if [ ! -f "${SERVER_ZIP}" ]; then
+    echo "Can not find input file ${1}"
+    exit 1
+fi
+if [ ! -f "${SCRIPT_DIR}/license.key" ]; then
+    echo "Missing license.key"
+    exit 1
+fi
+if [ ! -f "${SCRIPT_DIR}/serversettings.con" ]; then
+    echo "Missing serversettings.con"
+    exit 1
+fi
+
+VERSION_NAME=${SERVER_ZIP##*/} # Strip leading directories
+VERSION_NAME=${VERSION_NAME%.zip} # Strip extension
+OUTPUT_DIR="${SCRIPT_DIR}/bakes/prbf2_unknown_server"
+DOWNLOAD_DIR="${SCRIPT_DIR}/patches"
+UPDATER_OUTPUT="${SCRIPT_DIR}/updater_output.log"
+
+rm -rf "${OUTPUT_DIR}"
+mkdir -p "${OUTPUT_DIR}"
+unzip -o "${SERVER_ZIP}" -d "${OUTPUT_DIR}"
+cp "${SCRIPT_DIR}/license.key" "${OUTPUT_DIR}/mods/pr"
+cp "${SCRIPT_DIR}/serversettings.con" "${OUTPUT_DIR}/mods/pr/settings/"
+
+chmod +x "${OUTPUT_DIR}/start_pr.sh"
+chmod +x "${OUTPUT_DIR}/bin/amd-64/prbf2_l64ded"
+chmod +x "${OUTPUT_DIR}/mods/pr/bin/prserverupdater-linux64"
+
+pushd "${OUTPUT_DIR}/mods/pr/bin"
+export PR_DOWNLOAD_DIR="${DOWNLOAD_DIR}" # This doesn't seem to work
+echo -ne '\n' | "./prserverupdater-linux64" | tee "${UPDATER_OUTPUT}"
+popd
+
+sed -r 's/\x1B\[(;?[0-9]{1,3})+[mGK]//g' "${UPDATER_OUTPUT}" # Strip out color
+NEW_VERSION=$(grep -oP "(?<=Successfully updated to )[0-9\.]+" "${UPDATER_OUTPUT}")
+
+# Strip out windows only files
+shopt -s globstar nullglob
+for FILE in ${OUTPUT_DIR}/**/*.dll ${OUTPUT_DIR}/**/*.DLL ${OUTPUT_DIR}/**/*.exe ${OUTPUT_DIR}/**/*.EXE; do
+ rm $FILE
+done
+
+RESULT_DIR="${OUTPUT_DIR/unknown/$NEW_VERSION}_baked"
+mv "${OUTPUT_DIR}" "${RESULT_DIR}"
+rm -f "${UPDATER_OUTPUT}"
+
+echo ""
+du --summarize --human-readable ${RESULT_DIR}

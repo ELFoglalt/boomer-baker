@@ -1,0 +1,10 @@
+# Python
+__pycache__/
+*$py.class
+
+# Server bakes
+bakes
+license.key
+serversettings.con
+updater_output.log
+*.zip
