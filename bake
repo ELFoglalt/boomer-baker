@@ -7,6 +7,12 @@ IFS=$'\n\t'
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 
+if [ $# -le 1 ] || [ $# -gt 3 ]
+then
+    echo "usage: bake.sh server_zip server_ip [port]"
+    exit 1
+fi
+
 SERVER_ZIP=$(realpath ${1})
 if [ ! -f "${SERVER_ZIP}" ]; then
     echo "Can not find input file ${1}"
@@ -16,10 +22,9 @@ if [ ! -f "${SCRIPT_DIR}/license.key" ]; then
     echo "Missing license.key"
     exit 1
 fi
-if [ ! -f "${SCRIPT_DIR}/serversettings.con" ]; then
-    echo "Missing serversettings.con"
-    exit 1
-fi
+
+SERVER_IP=${2}
+SERVER_PORT=${3:-16567}
 
 VERSION_NAME=${SERVER_ZIP##*/} # Strip leading directories
 VERSION_NAME=${VERSION_NAME%.zip} # Strip extension
@@ -27,29 +32,71 @@ OUTPUT_DIR="${SCRIPT_DIR}/bakes/prbf2_unknown_server"
 DOWNLOAD_DIR="${SCRIPT_DIR}/patches"
 UPDATER_OUTPUT="${SCRIPT_DIR}/updater_output.log"
 
+UNAME=$(uname)
+if [ "$UNAME" == "Linux" ] ; then
+	PRSERVERUPDATER="prserverupdater-linux64"
+elif [[ "$UNAME" == CYGWIN* || "$UNAME" == MINGW* ]] ; then
+	PRSERVERUPDATER="prserverupdater-win32.exe"
+    set +e
+    net session > /dev/null 2>&1
+    if [ $? -ne 0 ]
+    then
+        echo "Prseverupdater requires administrative privileges on windows. Please run your terminal as admin!"
+        exit 0
+    fi
+    set -e
+elif [ "$UNAME" == "Darwin" ] ; then
+	echo "Baking on mac is not supported, duh."
+    exit 1
+else
+    echo "Failed to determine which serverupdater to use"
+    exit 1
+fi
+
+# Unzip game files
 rm -rf "${OUTPUT_DIR}"
 mkdir -p "${OUTPUT_DIR}"
 unzip -o "${SERVER_ZIP}" -d "${OUTPUT_DIR}"
-cp "${SCRIPT_DIR}/license.key" "${OUTPUT_DIR}/mods/pr"
-cp "${SCRIPT_DIR}/serversettings.con" "${OUTPUT_DIR}/mods/pr/settings/"
 
-chmod +x "${OUTPUT_DIR}/start_pr.sh"
-chmod +x "${OUTPUT_DIR}/bin/amd-64/prbf2_l64ded"
-chmod +x "${OUTPUT_DIR}/mods/pr/bin/prserverupdater-linux64"
+# Copy license
+cp "${SCRIPT_DIR}/license.key" "${OUTPUT_DIR}/mods/pr"
+# Edit server IP and PORT in serversettings.con
+sed -i -E "s|(sv.serverIP \").*(\")|\1${SERVER_IP}\2|" "${OUTPUT_DIR}/mods/pr/settings/serversettings.con"
+sed -i -E "s|(sv.serverPort ).*|\1${SERVER_PORT}|" "${OUTPUT_DIR}/mods/pr/settings/serversettings.con"
+
+# Add execute rights on Linux
+if [ "$UNAME" == "Linux" ]
+then
+    chmod +x "${OUTPUT_DIR}/start_pr.sh"
+    chmod +x "${OUTPUT_DIR}/bin/amd-64/prbf2_l64ded"
+    chmod +x "${OUTPUT_DIR}/mods/pr/bin/${PRSERVERUPDATER}"
+    chmod +x "${OUTPUT_DIR}/mods/pr/bin/PRMurmur/createchannel.sh"
+    chmod +x "${OUTPUT_DIR}/mods/pr/bin/PRMurmur/initialsetup.sh"
+    chmod +x "${OUTPUT_DIR}/mods/pr/bin/PRMurmur/prmurmurd.x64"
+    chmod +x "${OUTPUT_DIR}/mods/pr/bin/PRMurmur/startmumo.sh"
+fi
+
+
+if [[ "$UNAME" == CYGWIN* || "$UNAME" == MINGW* ]]
+then
+    mkdir -p ${DOWNLOAD_DIR}
+fi
 
 pushd "${OUTPUT_DIR}/mods/pr/bin"
-export PR_DOWNLOAD_DIR="${DOWNLOAD_DIR}" # This doesn't seem to work
-echo -ne '\n' | "./prserverupdater-linux64" | tee "${UPDATER_OUTPUT}"
+export PR_DOWNLOAD_DIR="${DOWNLOAD_DIR}" # This doesn't seem to work on linux
+
+# Run the server updater
+if [ "$UNAME" == "Linux" ]
+then
+    PRSERVERUPDATER_COMMAND="./${PRSERVERUPDATER}"
+else
+    PRSERVERUPDATER_COMMAND="winpty ./${PRSERVERUPDATER}"
+fi
+echo -ne '\n' | "./${PRSERVERUPDATER}" | tee "${UPDATER_OUTPUT}"
 popd
 
 sed -r 's/\x1B\[(;?[0-9]{1,3})+[mGK]//g' "${UPDATER_OUTPUT}" # Strip out color
 NEW_VERSION=$(grep -oP "(?<=Successfully updated to )[0-9\.]+" "${UPDATER_OUTPUT}")
-
-# Strip out windows only files
-shopt -s globstar nullglob
-for FILE in ${OUTPUT_DIR}/**/*.dll ${OUTPUT_DIR}/**/*.DLL ${OUTPUT_DIR}/**/*.exe ${OUTPUT_DIR}/**/*.EXE; do
- rm $FILE
-done
 
 RESULT_DIR="${OUTPUT_DIR/unknown/$NEW_VERSION}_baked"
 mv "${OUTPUT_DIR}" "${RESULT_DIR}"
