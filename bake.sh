@@ -62,8 +62,8 @@ unzip -o "${SERVER_ZIP}" -d "${OUTPUT_DIR}"
 # Copy license
 cp "${SCRIPT_DIR}/license.key" "${OUTPUT_DIR}/mods/pr"
 # Edit server IP and port in serversettings.con
-sed -nEi "s|(sv.serverIP \").*(\")|\1${SERVER_IP}\2|p" "${SERVERSETTINGS}"
-sed -nEi "s|(sv.serverPort ).*$|\1${SERVER_PORT}|p" "${SERVERSETTINGS}"
+sed -Ei "s|(sv.serverIP \").*(\")|\1${SERVER_IP}\2|" "${SERVERSETTINGS}"
+sed -Ei "s|(sv.serverPort ).*$|\1${SERVER_PORT}|" "${SERVERSETTINGS}"
 
 # Add execute rights on Linux
 if [ "$UNAME" == "Linux" ]
@@ -101,8 +101,8 @@ popd
 # Restore server IP and PORT to defaults serversettings.con
 # This is done so the files can be copied as is, and the changes won't be reflected
 # in the server repository.
-sed -i -n -E "s|(sv.serverIP \").*(\")|\1\2|" "${OUTPUT_DIR}/mods/pr/settings/serversettings.con"
-sed -i -n -E "s|(sv.serverPort ).*|\116567|" "${OUTPUT_DIR}/mods/pr/settings/serversettings.con"
+sed -nEi "s|(sv.serverIP \").*(\")|\1\2|" "${OUTPUT_DIR}/mods/pr/settings/serversettings.con"
+sed -nEi "s|(sv.serverPort ).*|\116567|" "${OUTPUT_DIR}/mods/pr/settings/serversettings.con"
 # Remove license file
 rm "${OUTPUT_DIR}/mods/pr/license.key"
 
