@@ -1,6 +1,0 @@
-{
-    "files.associations": {
-        "bake": "shellscript",
-        "clean": "shellscript",
-    }
-}

@@ -31,6 +31,7 @@ VERSION_NAME=${VERSION_NAME%.zip} # Strip extension
 OUTPUT_DIR="${SCRIPT_DIR}/bakes/prbf2_unknown_server"
 DOWNLOAD_DIR="${SCRIPT_DIR}/patches"
 UPDATER_OUTPUT="${SCRIPT_DIR}/updater_output.log"
+SERVERSETTINGS="${SERVER_DIR}/mods/pr/settings/serversettings.con"
 
 UNAME=$(uname)
 if [ "$UNAME" == "Linux" ] ; then
@@ -60,9 +61,9 @@ unzip -o "${SERVER_ZIP}" -d "${OUTPUT_DIR}"
 
 # Copy license
 cp "${SCRIPT_DIR}/license.key" "${OUTPUT_DIR}/mods/pr"
-# Edit server IP and PORT in serversettings.con
-sed -i -E "s|(sv.serverIP \").*(\")|\1${SERVER_IP}\2|" "${OUTPUT_DIR}/mods/pr/settings/serversettings.con"
-sed -i -E "s|(sv.serverPort ).*|\1${SERVER_PORT}|" "${OUTPUT_DIR}/mods/pr/settings/serversettings.con"
+# Edit server IP and port in serversettings.con
+sed -nEi "s|(sv.serverIP \").*(\")|\1${SERVER_IP}\2|p" "${SERVERSETTINGS}"
+sed -nEi "s|(sv.serverPort ).*$|\1${SERVER_PORT}|p" "${SERVERSETTINGS}"
 
 # Add execute rights on Linux
 if [ "$UNAME" == "Linux" ]
@@ -83,7 +84,9 @@ then
 fi
 
 pushd "${OUTPUT_DIR}/mods/pr/bin"
-export PR_DOWNLOAD_DIR="${DOWNLOAD_DIR}" # This doesn't seem to work on linux
+# Setting the patches directory doesn't work on linux, but it does on windows.
+# On linux the updater always puts the files in /tmp.
+export PR_DOWNLOAD_DIR="${DOWNLOAD_DIR}"
 
 # Run the server updater
 if [ "$UNAME" == "Linux" ]
@@ -95,9 +98,22 @@ fi
 echo -ne '\n' | "./${PRSERVERUPDATER}" | tee "${UPDATER_OUTPUT}"
 popd
 
-sed -r 's/\x1B\[(;?[0-9]{1,3})+[mGK]//g' "${UPDATER_OUTPUT}" # Strip out color
-NEW_VERSION=$(grep -oP "(?<=Successfully updated to )[0-9\.]+" "${UPDATER_OUTPUT}")
+# Restore server IP and PORT to defaults serversettings.con
+# This is done so the files can be copied as is, and the changes won't be reflected
+# in the server repository.
+sed -i -n -E "s|(sv.serverIP \").*(\")|\1\2|" "${OUTPUT_DIR}/mods/pr/settings/serversettings.con"
+sed -i -n -E "s|(sv.serverPort ).*|\116567|" "${OUTPUT_DIR}/mods/pr/settings/serversettings.con"
+# Remove license file
+rm "${OUTPUT_DIR}/mods/pr/license.key"
 
+# Remove .original files if any
+shopt -s nullglob
+shopt -s globstar
+rm -f -- ${OUTPUT_DIR}/**/*.original
+
+# Name output bake and clean up
+sed -n -r 's/\x1B\[(;?[0-9]{1,3})+[mGK]//g' "${UPDATER_OUTPUT}" # Strip out color
+NEW_VERSION=$(grep -oP "(?<=Successfully updated to )[0-9\.]+" "${UPDATER_OUTPUT}")
 RESULT_DIR="${OUTPUT_DIR/unknown/$NEW_VERSION}_baked"
 mv "${OUTPUT_DIR}" "${RESULT_DIR}"
 rm -f "${UPDATER_OUTPUT}"
