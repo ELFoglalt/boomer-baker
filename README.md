@@ -1,6 +1,13 @@
-> Server baking utility for the PR:BF2 server.
+> Development utilities for the PR:BF2 server.
 
-This utility project helps preparing versions of the PRBF2 server by pre-applying the updates from `prserverupdater`.
+## Server development
+
+To easily launch a development server, you can use the following command:
+```sh
+> ./scripts/serve.sh path-to-server-folder
+```
+This runs the PR server in a docker container
+By default the server listens for connections on `192.168.200.2:16567`.
 
 ## Baking a new version
 
@@ -29,7 +36,7 @@ Once everything is set up, you can then run the bake command, which will unzip t
 ```sh
 # Running the bake command
 # Use your server IP and port associated with the license.
-> ./bake prbf2_1.6.3.0_server.zip 0.0.0.0 16567
+> ./scripts/bake.sh prbf2_1.6.3.0_server.zip 0.0.0.0 16567
 ```
 
 > The IP and port doesn't have to be real or point to a valid server,
@@ -44,7 +51,6 @@ Normally this folder is then copied to replace the server folder of the [server]
 
 If you no longer need the baked files, or you want to clean up after a failed bake, run `./baking/clean`.
 ```sh
-# Deleting all bakes
-> ./clean.sh
+# Deleting all bakes and generated files
+> ./scripts/clean.sh
 ```
-**Beware, this will indiscriminately remove everything in `./bakes`!**
