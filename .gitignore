@@ -8,3 +8,6 @@ license.key
 serversettings.con
 updater_output.log
 *.zip
+
+# Development server files
+server

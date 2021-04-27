@@ -1,11 +1,7 @@
 #!/bin/bash
 
-# strict mode
-set -eou pipefail
-IFS=$'\n\t'
-# see http://redsymbol.net/articles/unofficial-bash-strict-mode/
-
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+source "${SCRIPT_DIR}/src/utils.sh"
 
 if [ $# -le 1 ] || [ $# -gt 3 ]
 then
@@ -18,7 +14,8 @@ if [ ! -f "${SERVER_ZIP}" ]; then
     echo "Can not find input file ${1}"
     exit 1
 fi
-if [ ! -f "${SCRIPT_DIR}/license.key" ]; then
+LICENSE_KEY="${PROJECT_DIR}/license.key"
+if [ ! -f "${LICENSE_KEY}" ]; then
     echo "Missing license.key"
     exit 1
 fi
@@ -28,10 +25,10 @@ SERVER_PORT=${3:-16567}
 
 VERSION_NAME=${SERVER_ZIP##*/} # Strip leading directories
 VERSION_NAME=${VERSION_NAME%.zip} # Strip extension
-OUTPUT_DIR="${SCRIPT_DIR}/bakes/prbf2_unknown_server"
-DOWNLOAD_DIR="${SCRIPT_DIR}/patches"
-UPDATER_OUTPUT="${SCRIPT_DIR}/updater_output.log"
-SERVERSETTINGS="${SERVER_DIR}/mods/pr/settings/serversettings.con"
+OUTPUT_DIR="${BAKES_DIR}/prbf2_unknown_server"
+DOWNLOAD_DIR="${PATCHES_DIR}"
+UPDATER_OUTPUT="${PROJECT_DIR}/updater_output.log"
+SERVERSETTINGS="${OUTPUT_DIR}/mods/pr/settings/serversettings.con"
 
 UNAME=$(uname)
 if [ "$UNAME" == "Linux" ] ; then
@@ -60,7 +57,7 @@ mkdir -p "${OUTPUT_DIR}"
 unzip -o "${SERVER_ZIP}" -d "${OUTPUT_DIR}"
 
 # Copy license
-cp "${SCRIPT_DIR}/license.key" "${OUTPUT_DIR}/mods/pr"
+cp "${LICENSE_KEY}" "${OUTPUT_DIR}/mods/pr"
 # Edit server IP and port in serversettings.con
 sed -Ei "s|(sv.serverIP \").*(\")|\1${SERVER_IP}\2|" "${SERVERSETTINGS}"
 sed -Ei "s|(sv.serverPort ).*$|\1${SERVER_PORT}|" "${SERVERSETTINGS}"
@@ -104,19 +101,39 @@ popd
 sed -nEi "s|(sv.serverIP \").*(\")|\1\2|" "${OUTPUT_DIR}/mods/pr/settings/serversettings.con"
 sed -nEi "s|(sv.serverPort ).*|\116567|" "${OUTPUT_DIR}/mods/pr/settings/serversettings.con"
 # Remove license file
-rm "${OUTPUT_DIR}/mods/pr/license.key"
+rm -f "${OUTPUT_DIR}/mods/pr/license.key"
 
 # Remove .original files if any
 shopt -s nullglob
 shopt -s globstar
 rm -f -- ${OUTPUT_DIR}/**/*.original
 
-# Name output bake and clean up
+# Turn off prism (doesn't work out of the box)
+ADMIN_CONF="${OUTPUT_DIR}/mods/pr/python/game/realityconfig_admin.py"
+sed -Ei "s|(rcon_enabled = )True$|\1False|" "${ADMIN_CONF}"
+
+# Create a .gitignore file in the server folder
+readonly TEMPLATE=$(realpath "${PROJECT_DIR}/.gitignore.template")
+readonly GITINGORE=$(realpath "${OUTPUT_DIR}/.gitignore")
+cp ${TEMPLATE} ${GITINGORE}
+# Append all provided .pyc/.pyd/.pyo file names with negated rules.
+pushd "${OUTPUT_DIR}"
+while IFS= read -r -d '' file; do
+    # The "!" at the start means these files **will** get committed.
+    printf "!${file:2}\n" >> ${GITINGORE}
+done < <(find . -name "*.py[cdo]" -print0)
+popd
+
+# Name output bake according to version reported by prserverupdater
 sed -n -r 's/\x1B\[(;?[0-9]{1,3})+[mGK]//g' "${UPDATER_OUTPUT}" # Strip out color
 NEW_VERSION=$(grep -oP "(?<=Successfully updated to )[0-9\.]+" "${UPDATER_OUTPUT}")
 RESULT_DIR="${OUTPUT_DIR/unknown/$NEW_VERSION}_baked"
 mv "${OUTPUT_DIR}" "${RESULT_DIR}"
+
+# Clean up prserverupdater output logs
 rm -f "${UPDATER_OUTPUT}"
 
 echo ""
-du --summarize --human-readable ${RESULT_DIR}
+echo "Finished bake as"
+echo "    $(basename ${RESULT_DIR})" "(" $(du --summarize --human-readable "${RESULT_DIR}" | cut -f -1 ) ")"
+echo ""

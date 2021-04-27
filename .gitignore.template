@@ -1,0 +1,20 @@
+# THIS IS A GENERATED FILE THAT IS CREATED DURING BAKING
+
+# Server files
+battlerecorder
+demos
+state
+temp
+json
+profiler.txt
+*.log
+*.PRdemo
+*.bf2demo
+
+# General python files
+__pycache__
+*.pyc
+*.pyd
+*.pyo
+
+# Except pre-provided
