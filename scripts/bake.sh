@@ -98,8 +98,8 @@ popd
 # Restore server IP and PORT to defaults serversettings.con
 # This is done so the files can be copied as is, and the changes won't be reflected
 # in the server repository.
-sed -nEi "s|(sv.serverIP \").*(\")|\1\2|" "${OUTPUT_DIR}/mods/pr/settings/serversettings.con"
-sed -nEi "s|(sv.serverPort ).*|\116567|" "${OUTPUT_DIR}/mods/pr/settings/serversettings.con"
+sed -Ei "s|(sv.serverIP \").*(\")|\1\2|" "${OUTPUT_DIR}/mods/pr/settings/serversettings.con"
+sed -Ei "s|(sv.serverPort ).*|\116567|" "${OUTPUT_DIR}/mods/pr/settings/serversettings.con"
 # Remove license file
 rm -f "${OUTPUT_DIR}/mods/pr/license.key"
 
