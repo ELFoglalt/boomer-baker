@@ -10,6 +10,7 @@ profiler.txt
 *.log
 *.PRdemo
 *.bf2demo
+core
 
 # General python files
 __pycache__
