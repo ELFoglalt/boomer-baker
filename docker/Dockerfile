@@ -19,6 +19,7 @@ EXPOSE ${PRISM_PORT}/tcp
 
 WORKDIR /server
 COPY entrypoint.sh .
+RUN chmod +x entrypoint.sh
 
 WORKDIR /server/mnt
 ENTRYPOINT [ "../entrypoint.sh" ]
