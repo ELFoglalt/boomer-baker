@@ -2,12 +2,51 @@
 
 ## Server development
 
-To easily launch a development server, you can use the following command:
+You may use this repo in parallel with the server repository to host a development server.
+
 ```sh
 > ./scripts/serve.sh path-to-server-folder
 ```
 This runs the PR server in a docker container
-By default the server listens for connections on `192.168.200.2:16567`.
+By default the server listens for connections on `192.168.200.2:16567`, and it should be visible in the local servers list.
+Make sure you use an **online** account to connect. Local accounts incorrectly give an error about the server version not matching your game version.
+
+### Using Visual Studio Code
+
+You can set up a workspace file similar to the one below, to
+have both baker and the server files available simoultaneously:
+```json
+{
+	"folders": [
+		{
+			"name": "baker",
+			"path": "path/to/baker",
+		},
+		{
+			"name": "server",
+			"path": "path/to/server",
+		},
+	],
+	"settings": {
+		"python.pythonPath": "path/to/your/local/python2.7.16",
+        // Plyance doesn't support Python 2
+		"python.languageServer": "Jedi",
+		"python.linting.enabled": true,
+        // Allow search in ignored files
+		"search.useIgnoreFiles": false,
+        // Hide executables and precompileds from the explorer to reduce clutter
+		"files.exclude": {
+            "**/*.zip": true,
+			"**/*.dll": true,
+			"**/*.exe": true,
+			"**/*.pyc": true,
+			"**/*.pyd": true,
+			"**/*.pyo": true
+		},
+	}
+}
+```
+
 
 ## Baking a new version
 
