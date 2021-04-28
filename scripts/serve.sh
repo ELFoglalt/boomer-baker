@@ -59,7 +59,7 @@ docker network create --subnet=${NETWORK_SUBNET} ${NETWORK_NAME}
 
 # Make sure the network gets deleted on exit
 function cleanup2 {
-    cleanup1;
+    cleanup1
     NETWORK=$(docker network ls -q -f name=${NETWORK_NAME})
     docker network rm $NETWORK
 }
@@ -75,6 +75,7 @@ docker run \
     --publish 29900:29900/udp \
     --publish 4711:4711/tcp \
     --publish 4712:4712/tcp \
+    --env PRB_MODULE_MODE=DEBUG \
     --rm \
     --interactive \
     --tty \
