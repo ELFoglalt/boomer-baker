@@ -75,7 +75,7 @@ docker run \
     --publish 29900:29900/udp \
     --publish 4711:4711/tcp \
     --publish 4712:4712/tcp \
-    --env PRB_MODULE_MODE=DEBUG \
+    --env PRB_ENV=DEVELOPMENT \
     --rm \
     --interactive \
     --tty \
