@@ -113,9 +113,9 @@ ADMIN_CONF="${OUTPUT_DIR}/mods/pr/python/game/realityconfig_admin.py"
 sed -Ei "s|(rcon_enabled = )True$|\1False|" "${ADMIN_CONF}"
 
 # Create a .gitignore file in the server folder
-readonly TEMPLATE=$(realpath "${PROJECT_DIR}/.gitignore.template")
+readonly GITIGNORE_TEMPLATE=$(realpath "${PROJECT_DIR}/.gitignore.template")
 readonly GITINGORE=$(realpath "${OUTPUT_DIR}/.gitignore")
-cp ${TEMPLATE} ${GITINGORE}
+cp ${GITIGNORE_TEMPLATE} ${GITINGORE}
 # Append all provided .pyc/.pyd/.pyo file names with negated rules.
 pushd "${OUTPUT_DIR}"
 while IFS= read -r -d '' file; do
@@ -123,6 +123,10 @@ while IFS= read -r -d '' file; do
     printf "!${file:2}\n" >> ${GITINGORE}
 done < <(find . -name "*.py[cdo]" -print0)
 popd
+
+# Create a .gitattributes file for git LFS
+readonly GITATTRIBUTES_TEMPLATE=$(realpath "${PROJECT_DIR}/.gitattributes.template")
+cp "${GITATTRIBUTES_TEMPLATE}" "${OUTPUT_DIR}/.gitattributes"
 
 # Name output bake according to version reported by prserverupdater
 sed -n -r 's/\x1B\[(;?[0-9]{1,3})+[mGK]//g' "${UPDATER_OUTPUT}" # Strip out color
