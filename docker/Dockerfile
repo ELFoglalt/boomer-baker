@@ -22,4 +22,4 @@ COPY entrypoint.sh .
 RUN chmod +x entrypoint.sh
 
 WORKDIR /server/mnt
-ENTRYPOINT [ "../entrypoint.sh" ]
+ENTRYPOINT [ "/bin/bash", "--rcfile", "../entrypoint.sh", "-i" ]
