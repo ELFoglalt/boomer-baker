@@ -1,6 +1,7 @@
 #! /bin/bash
 
 ./start_pr.sh +multi 1 +dedicated 1
- echo "Server stopped. Exit shell to clean up docker container, or run the server again as needed."
+ echo ""
+ echo "Server stopped. Use the command in your bash history to run it again, exit shell to clean up."
+ echo ""
  history -s "./start_pr.sh +multi 1 +dedicated 1"
- HISTCONTROL=ignorespace
