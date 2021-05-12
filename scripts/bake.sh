@@ -62,18 +62,13 @@ cp "${LICENSE_KEY}" "${OUTPUT_DIR}/mods/pr"
 sed -Ei "s|(sv.serverIP \").*(\")|\1${SERVER_IP}\2|" "${SERVERSETTINGS}"
 sed -Ei "s|(sv.serverPort ).*$|\1${SERVER_PORT}|" "${SERVERSETTINGS}"
 
-# Add execute rights on Linux
-if [ "$UNAME" == "Linux" ]
-then
-    chmod +x "${OUTPUT_DIR}/start_pr.sh"
-    chmod +x "${OUTPUT_DIR}/bin/amd-64/prbf2_l64ded"
-    chmod +x "${OUTPUT_DIR}/mods/pr/bin/${PRSERVERUPDATER}"
-    chmod +x "${OUTPUT_DIR}/mods/pr/bin/PRMurmur/createchannel.sh"
-    chmod +x "${OUTPUT_DIR}/mods/pr/bin/PRMurmur/initialsetup.sh"
-    chmod +x "${OUTPUT_DIR}/mods/pr/bin/PRMurmur/prmurmurd.x64"
-    chmod +x "${OUTPUT_DIR}/mods/pr/bin/PRMurmur/startmumo.sh"
-fi
-
+chmod +x "${OUTPUT_DIR}/start_pr.sh"
+chmod +x "${OUTPUT_DIR}/bin/amd-64/prbf2_l64ded"
+chmod +x "${OUTPUT_DIR}/mods/pr/bin/${PRSERVERUPDATER}"
+chmod +x "${OUTPUT_DIR}/mods/pr/bin/PRMurmur/createchannel.sh"
+chmod +x "${OUTPUT_DIR}/mods/pr/bin/PRMurmur/initialsetup.sh"
+chmod +x "${OUTPUT_DIR}/mods/pr/bin/PRMurmur/prmurmurd.x64"
+chmod +x "${OUTPUT_DIR}/mods/pr/bin/PRMurmur/startmumo.sh"
 
 if [[ "$UNAME" == CYGWIN* || "$UNAME" == MINGW* ]]
 then
