@@ -10,12 +10,14 @@ then
 fi
 
 SERVER_ZIP=$(realpath ${1})
-if [ ! -f "${SERVER_ZIP}" ]; then
+if [ ! -f "${SERVER_ZIP}" ]
+then
     echo "Can not find input file ${1}"
     exit 1
 fi
 LICENSE_KEY="${PROJECT_DIR}/license.key"
-if [ ! -f "${LICENSE_KEY}" ]; then
+if [ ! -f "${LICENSE_KEY}" ]
+then
     echo "Missing license.key"
     exit 1
 fi
@@ -27,7 +29,7 @@ VERSION_NAME=${SERVER_ZIP##*/} # Strip leading directories
 VERSION_NAME=${VERSION_NAME%.zip} # Strip extension
 OUTPUT_DIR="${BAKES_DIR}/prbf2_unknown_server"
 DOWNLOAD_DIR="${PATCHES_DIR}"
-UPDATER_OUTPUT="${PROJECT_DIR}/updater_output.log"
+UPDATER_OUTPUT="${TEMP_DIR}/updater_output.log"
 SERVERSETTINGS="${OUTPUT_DIR}/mods/pr/settings/serversettings.con"
 
 UNAME=$(uname)
@@ -62,13 +64,7 @@ cp "${LICENSE_KEY}" "${OUTPUT_DIR}/mods/pr"
 sed -Ei "s|(sv.serverIP \").*(\")|\1${SERVER_IP}\2|" "${SERVERSETTINGS}"
 sed -Ei "s|(sv.serverPort ).*$|\1${SERVER_PORT}|" "${SERVERSETTINGS}"
 
-chmod +x "${OUTPUT_DIR}/start_pr.sh"
-chmod +x "${OUTPUT_DIR}/bin/amd-64/prbf2_l64ded"
 chmod +x "${OUTPUT_DIR}/mods/pr/bin/${PRSERVERUPDATER}"
-chmod +x "${OUTPUT_DIR}/mods/pr/bin/PRMurmur/createchannel.sh"
-chmod +x "${OUTPUT_DIR}/mods/pr/bin/PRMurmur/initialsetup.sh"
-chmod +x "${OUTPUT_DIR}/mods/pr/bin/PRMurmur/prmurmurd.x64"
-chmod +x "${OUTPUT_DIR}/mods/pr/bin/PRMurmur/startmumo.sh"
 
 if [[ "$UNAME" == CYGWIN* || "$UNAME" == MINGW* ]]
 then
@@ -87,8 +83,13 @@ then
 else
     PRSERVERUPDATER_COMMAND="winpty ./${PRSERVERUPDATER}"
 fi
-echo -ne '\n' | "./${PRSERVERUPDATER}" | tee "${UPDATER_OUTPUT}"
+echo -ne '\n' | TERM=dumb "./${PRSERVERUPDATER}" | tee "${UPDATER_OUTPUT}"
 popd
+
+ # Strip out ANSI control sequences
+sed -i 's/\x1B[@A-Z\\\]^_]\|\x1B\[[0-9:;<=>?]*[-!"#$%&'"'"'()*+,.\/]*[][\\@A-Z^_`a-z{|}~]//g' "${UPDATER_OUTPUT}"
+NEW_VERSION=$(grep -oP "(?<=Checking latest version... )[0-9\.]+" "${UPDATER_OUTPUT}")
+
 
 # Restore server IP and PORT to defaults serversettings.con
 # This is done so the files can be copied as is, and the changes won't be reflected
@@ -103,6 +104,15 @@ shopt -s nullglob
 shopt -s globstar
 rm -f -- ${OUTPUT_DIR}/**/*.original
 
+
+chmod +x "${OUTPUT_DIR}/start_pr.sh"
+chmod +x "${OUTPUT_DIR}/bin/amd-64/prbf2_l64ded"
+chmod +x "${OUTPUT_DIR}/mods/pr/bin/PRMurmur/createchannel.sh"
+chmod +x "${OUTPUT_DIR}/mods/pr/bin/PRMurmur/initialsetup.sh"
+chmod +x "${OUTPUT_DIR}/mods/pr/bin/PRMurmur/prmurmurd.x64"
+chmod +x "${OUTPUT_DIR}/mods/pr/bin/PRMurmur/startmumo.sh"
+
+
 # Turn off prism (doesn't work out of the box)
 ADMIN_CONF="${OUTPUT_DIR}/mods/pr/python/game/realityconfig_admin.py"
 sed -Ei "s|(rcon_enabled = )True$|\1False|" "${ADMIN_CONF}"
@@ -113,10 +123,8 @@ readonly GITINGORE=$(realpath "${OUTPUT_DIR}/.gitignore")
 cp ${GITIGNORE_TEMPLATE} ${GITINGORE}
 # Append all provided .pyc/.pyd/.pyo file names with negated rules.
 pushd "${OUTPUT_DIR}"
-while IFS= read -r -d '' file; do
-    # The "!" at the start means these files **will** get committed.
-    printf "!${file:2}\n" >> ${GITINGORE}
-done < <(find . -name "*.py[cdo]" -print0)
+# The "!" at the start means these files **will** get committed.
+find . -name '*.py[cdo]' | sed -E 's|\./(.*)$|!\1|' >> ${GITINGORE}
 popd
 
 # Create a .gitattributes file for git LFS
@@ -124,9 +132,8 @@ readonly GITATTRIBUTES_TEMPLATE=$(realpath "${PROJECT_DIR}/.gitattributes.templa
 cp "${GITATTRIBUTES_TEMPLATE}" "${OUTPUT_DIR}/.gitattributes"
 
 # Name output bake according to version reported by prserverupdater
-sed -n -r 's/\x1B\[(;?[0-9]{1,3})+[mGK]//g' "${UPDATER_OUTPUT}" # Strip out color
-NEW_VERSION=$(grep -oP "(?<=Successfully updated to )[0-9\.]+" "${UPDATER_OUTPUT}")
 RESULT_DIR="${OUTPUT_DIR/unknown/$NEW_VERSION}_baked"
+rm -rf "${RESULT_DIR}"
 mv "${OUTPUT_DIR}" "${RESULT_DIR}"
 
 # Clean up prserverupdater output logs

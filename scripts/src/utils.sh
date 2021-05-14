@@ -9,6 +9,9 @@ export PROJECT_DIR=$(realpath "${SRC_DIR}/../..")
 export BAKES_DIR="${PROJECT_DIR}/bakes"
 export PATCHES_DIR="${PROJECT_DIR}/patches"
 export DOCKER_DIR="${PROJECT_DIR}/docker"
+export TEMP_DIR="${PROJECT_DIR}/temp"
+
+mkdir -p "${TEMP_DIR}"
 
 # Silent pushd and popd
 function pushd {

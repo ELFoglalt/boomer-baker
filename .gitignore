@@ -10,3 +10,6 @@ updater_output.log
 
 # Development server files
 server
+
+# Temp files
+temp
