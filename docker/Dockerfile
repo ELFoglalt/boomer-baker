@@ -2,7 +2,7 @@
 FROM debian:10-slim as build
 
 RUN apt update; \
-    apt install -y --no-install-recommends tcpdump unzip libncurses5 python3 python3-pip python3-aiohttp; \
+    apt install -y --no-install-recommends tcpdump unzip libncurses5 python2 python3 python3-pip python3-aiohttp; \
     rm -rf /var/lib/apt/lists/*;
 
 ARG GAME_PORT=16567

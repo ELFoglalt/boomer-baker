@@ -111,7 +111,10 @@ chmod +x "${OUTPUT_DIR}/mods/pr/bin/PRMurmur/createchannel.sh"
 chmod +x "${OUTPUT_DIR}/mods/pr/bin/PRMurmur/initialsetup.sh"
 chmod +x "${OUTPUT_DIR}/mods/pr/bin/PRMurmur/prmurmurd.x64"
 chmod +x "${OUTPUT_DIR}/mods/pr/bin/PRMurmur/startmumo.sh"
-
+chmod +x "${OUTPUT_DIR}/adminutils/demo/rotate_demo.py"
+chmod +x "${OUTPUT_DIR}/adminutils/demo/setup.py"
+chmod +x "${OUTPUT_DIR}/adminutils/rcon/remoteconsole.py"
+chmod +x "${OUTPUT_DIR}/adminutils/rcon/setup.py"
 
 # Turn off prism (doesn't work out of the box)
 ADMIN_CONF="${OUTPUT_DIR}/mods/pr/python/game/realityconfig_admin.py"
